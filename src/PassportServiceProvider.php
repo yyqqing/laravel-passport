@@ -5,6 +5,7 @@ namespace Laravel\Passport;
 use DateInterval;
 use Illuminate\Auth\RequestGuard;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Cookie;
@@ -32,9 +33,9 @@ class PassportServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'passport');
+        // $this->loadViewsFrom(__DIR__.'/../resources/views', 'passport');
 
-        $this->deleteCookieOnLogout();
+        // $this->deleteCookieOnLogout();
 
         if ($this->app->runningInConsole()) {
             $this->registerMigrations();
@@ -43,13 +44,13 @@ class PassportServiceProvider extends ServiceProvider
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'passport-migrations');
 
-            $this->publishes([
-                __DIR__.'/../resources/views' => base_path('resources/views/vendor/passport'),
-            ], 'passport-views');
+            // $this->publishes([
+            //     __DIR__.'/../resources/views' => base_path('resources/views/vendor/passport'),
+            // ], 'passport-views');
 
-            $this->publishes([
-                __DIR__.'/../resources/js/components' => base_path('resources/js/components/passport'),
-            ], 'passport-components');
+            // $this->publishes([
+            //     __DIR__.'/../resources/js/components' => base_path('resources/js/components/passport'),
+            // ], 'passport-components');
 
             $this->commands([
                 Console\InstallCommand::class,
@@ -57,6 +58,8 @@ class PassportServiceProvider extends ServiceProvider
                 Console\KeysCommand::class,
             ]);
         }
+        
+        Passport::routes();
     }
 
     /**
@@ -78,6 +81,10 @@ class PassportServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->singleton(Connection::class, function() {
+            return $this->app['db.connection'];
+        });
+
         $this->registerAuthorizationServer();
 
         $this->registerResourceServer();
@@ -249,7 +256,7 @@ class PassportServiceProvider extends ServiceProvider
      */
     protected function registerGuard()
     {
-        Auth::extend('passport', function ($app, $name, array $config) {
+        app('auth')->extend('passport', function ($app, $name, array $config) {
             return tap($this->makeGuard($config), function ($guard) {
                 $this->app->refresh('request', $guard, 'setRequest');
             });
@@ -267,7 +274,7 @@ class PassportServiceProvider extends ServiceProvider
         return new RequestGuard(function ($request) use ($config) {
             return (new TokenGuard(
                 $this->app->make(ResourceServer::class),
-                Auth::createUserProvider($config['provider']),
+                app('auth')->createUserProvider($config['provider']),
                 $this->app->make(TokenRepository::class),
                 $this->app->make(ClientRepository::class),
                 $this->app->make('encrypter')

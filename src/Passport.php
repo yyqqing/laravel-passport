@@ -170,7 +170,7 @@ class Passport
 
         $options = array_merge($defaultOptions, $options);
 
-        Route::group($options, function ($router) use ($callback) {
+        app('router')->group($options, function ($router) use ($callback) {
             $callback(new RouteRegistrar($router));
         });
     }
