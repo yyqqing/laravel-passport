@@ -84,6 +84,12 @@ class PassportServiceProvider extends ServiceProvider
         $this->app->singleton(Connection::class, function() {
             return $this->app['db.connection'];
         });
+        
+        if (preg_match('/5\.[67]\.\d+/', $this->app->version())) {
+            $this->app->singleton(\Illuminate\Hashing\HashManager::class, function ($app) {
+                return new \Illuminate\Hashing\HashManager($app);
+            });
+        }
 
         $this->registerAuthorizationServer();
 
